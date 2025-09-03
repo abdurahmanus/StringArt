@@ -5,43 +5,72 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
   </head>
-  <body>
-    <form action="/generate/" method="post" enctype="multipart/form-data">
-      <label class="block">
-        image
-        <input type="file" name="input_file" accept="image/*" />
-      </label>
-      <label class="block">
-        side_len
-        <input type="number" name="side_len" value="500" min="300" />
-      </label>
-      <label class="block">
-        nail_step
-        <input type="number" name="nail_step" step="1" value="4" min="1" />
-      </label>
-      <label class="block">
-        export_strength
-        <input
-          type="number"
-          name="export_strength"
-          step="0.01"
-          value="0.1"
-          min="0.01"
-        />
-      </label>
-      <label class="block">
-        wb
-        <input type="checkbox" name="wb" />
-      </label>
-      <label class="block">
-        rgb
-        <input type="checkbox" name="rgb" />
-      </label>
-      <label class="block">
-        rect
-        <input type="checkbox" name="rect" />
-      </label>
-      <button class="border bg-blue-100 p-2" type="submit">Upload</button>
-    </form>
+  <main class="p-4">
+      <form
+        action="/generate/"
+        method="post"
+        enctype="multipart/form-data"
+        class="space-y-2"
+      >
+        <label class="block">
+          Исходное изображение
+          <input
+            type="file"
+            name="input_file"
+            accept="image/*"
+            class="border"
+            required
+          />
+        </label>
+        <label class="block">
+          Размер сгенерированного изображения в пикселях
+          <input
+            type="number"
+            name="side_len"
+            value="500"
+            min="300"
+            class="border"
+            required
+          />
+        </label>
+        <label class="block">
+          Расстояние между гвоздями
+          <input
+            type="number"
+            name="nail_step"
+            step="1"
+            value="4"
+            min="1"
+            class="border"
+            required
+          />
+        </label>
+        <label class="block">
+          Толщина нитки
+          <input
+            type="number"
+            name="export_strength"
+            step="0.01"
+            value="0.1"
+            min="0.01"
+            class="border"
+            required
+          />
+        </label>
+        <label class="block">
+          Белое на черном
+          <input type="checkbox" name="wb" class="border" />
+        </label>
+        <label class="block">
+          Цветные нитки
+          <input type="checkbox" name="rgb" class="border" />
+        </label>
+        <label class="block">
+          Прямоугольный холст
+          <input type="checkbox" name="rect" class="border" />
+        </label>
+        <button class="border bg-blue-100 p-2" type="submit">Начать</button>
+      </form>
+    </main>
   </body>
 </html>
