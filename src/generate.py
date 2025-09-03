@@ -1,6 +1,5 @@
 import numpy as np
-import matplotlib.image as mpimg
-import matplotlib.pyplot as plt
+from PIL import Image
 from skimage.draw import line_aa, ellipse_perimeter
 from math import atan2
 from skimage.transform import resize
@@ -58,14 +57,14 @@ def get_aa_line(from_pos, to_pos, str_strength, picture):
 
     return line, rr, cc
 
-def find_best_nail_position(current_position, nails, str_pic, orig_pic, str_strength):
+def find_best_nail_position(current_position, nails, str_pic, orig_pic, str_strength, random_nails):
 
     best_cumulative_improvement = -99999
     best_nail_position = None
     best_nail_idx = None
     
-    if args.random_nails != None:
-        nail_ids = np.random.choice(range(len(nails)), size=args.random_nails, replace=False)
+    if random_nails != None:
+        nail_ids = np.random.choice(range(len(nails)), size=random_nails, replace=False)
         nails_and_ids = list(zip(nail_ids, nails[nail_ids]))
     else:
         nails_and_ids = enumerate(nails)
@@ -86,7 +85,7 @@ def find_best_nail_position(current_position, nails, str_pic, orig_pic, str_stre
 
     return best_nail_idx, best_nail_position, best_cumulative_improvement
 
-def create_art(nails, orig_pic, str_pic, str_strength, i_limit=None):
+def create_art(nails, orig_pic, str_pic, str_strength, random_nails, i_limit=None):
 
     start = time()
     iter_times = []
@@ -112,7 +111,7 @@ def create_art(nails, orig_pic, str_pic, str_strength, i_limit=None):
                 break
 
         idx, best_nail_position, best_cumulative_improvement = find_best_nail_position(current_position, nails,
-                                                                                       str_pic, orig_pic, str_strength)
+                                                                                       str_pic, orig_pic, str_strength, random_nails)
 
         if best_cumulative_improvement <= 0:
             fails += 1
@@ -169,29 +168,15 @@ def pull_order_to_array_rgb(orders, canvas, nails, colors, strength):
             # canvas[rr, cc] = colors[color_idx]
     return np.clip(canvas, a_min=0, a_max=1)
 
-if __name__ == '__main__':
-    parser = argparse.ArgumentParser(description='Create String Art')
-    parser.add_argument('-i', action="store", dest="input_file")
-    parser.add_argument('-o', action="store", dest="output_file", default="output.png")
-    parser.add_argument('-d', action="store", type=int, dest="side_len", default=300)
-    parser.add_argument('-s', action="store", type=float, dest="export_strength", default=0.1)
-    parser.add_argument('-l', action="store", type=int, dest="pull_amount", default=None)
-    parser.add_argument('-r', action="store", type=int, dest="random_nails", default=None)
-    parser.add_argument('-r1', action="store", type=float, dest="radius1_multiplier", default=1)
-    parser.add_argument('-r2', action="store", type=float, dest="radius2_multiplier", default=1)
-    parser.add_argument('-n', action="store", type=int, dest="nail_step", default=4)
-    parser.add_argument('--wb', action="store_true")
-    parser.add_argument('--rgb', action="store_true")
-    parser.add_argument('--rect', action="store_true")
-
-    args = parser.parse_args()
-
+def generate(args):
     LONG_SIDE = 300
 
-    img = mpimg.imread(args.input_file)
+    img = Image.open(args.input_file).convert("RGBA")
+
+    # Convert to numpy array
+    img = np.array(img)
     
-    if np.any(img>100):
-        img = img / 255
+    img = img.astype(np.float32) / 255.0
     
     if args.radius1_multiplier == 1 and args.radius2_multiplier == 1:
         img = largest_square(img)
@@ -215,13 +200,13 @@ if __name__ == '__main__':
         
 
         str_pic_r = init_canvas(shape, black=args.wb)
-        pull_orders_r = create_art(nails, r, str_pic_r, iteration_strength, i_limit=args.pull_amount)
+        pull_orders_r = create_art(nails, r, str_pic_r, iteration_strength, args.random_nails, i_limit=args.pull_amount)
 
         str_pic_g = init_canvas(shape, black=args.wb)
-        pull_orders_g = create_art(nails, g, str_pic_g, iteration_strength, i_limit=args.pull_amount)
+        pull_orders_g = create_art(nails, g, str_pic_g, iteration_strength, args.random_nails, i_limit=args.pull_amount)
 
         str_pic_b = init_canvas(shape, black=args.wb)
-        pull_orders_b = create_art(nails, b, str_pic_b, iteration_strength, i_limit=args.pull_amount)
+        pull_orders_b = create_art(nails, b, str_pic_b, iteration_strength, args.random_nails, i_limit=args.pull_amount)
 
         max_pulls = np.max([len(pull_orders_r), len(pull_orders_g), len(pull_orders_b)])
         pull_orders_r = pull_orders_r + [pull_orders_r[-1]] * (max_pulls - len(pull_orders_r))
@@ -247,7 +232,8 @@ if __name__ == '__main__':
             (np.array((1., 0., 0.,)), np.array((0., 1., 0.,)), np.array((0., 0., 1.,))),
             args.export_strength if args.wb else -args.export_strength
         )
-        mpimg.imsave(args.output_file, result, cmap=plt.get_cmap("gray"), vmin=0.0, vmax=1.0)
+        pil_img = Image.fromarray((result * 255).astype(np.uint8))
+        return pil_img
 
     else:
         orig_pic = rgb2gray(img)*0.9
@@ -255,13 +241,12 @@ if __name__ == '__main__':
         image_dimens = int(args.side_len * args.radius1_multiplier), int(args.side_len * args.radius2_multiplier)
         if args.wb:
             str_pic = init_canvas(shape, black=True)
-            pull_order = create_art(nails, orig_pic, str_pic, 0.05, i_limit=args.pull_amount)
+            pull_order = create_art(nails, orig_pic, str_pic, 0.05, args.random_nails, i_limit=args.pull_amount)
             blank = init_canvas(image_dimens, black=True)
-
 
         else:
             str_pic = init_canvas(shape, black=False)
-            pull_order = create_art(nails, orig_pic, str_pic, -0.05, i_limit=args.pull_amount)
+            pull_order = create_art(nails, orig_pic, str_pic, -0.05, args.random_nails, i_limit=args.pull_amount)
             blank = init_canvas(image_dimens, black=False)
 
         scaled_nails = scale_nails(
@@ -276,7 +261,29 @@ if __name__ == '__main__':
             scaled_nails,
             args.export_strength if args.wb else -args.export_strength
         )
-        mpimg.imsave(args.output_file, result, cmap=plt.get_cmap("gray"), vmin=0.0, vmax=1.0)
-
         print(f"Thread pull order by nail index:\n{'-'.join([str(idx) for idx in pull_order])}")
+        
+        pil_img = Image.fromarray((result * 255).astype(np.uint8))
+        return pil_img
+
+
+if __name__ == '__main__':
+    parser = argparse.ArgumentParser(description='Create String Art')
+    parser.add_argument('-i', action="store", dest="input_file")
+    parser.add_argument('-o', action="store", dest="output_file", default="output.png")
+    parser.add_argument('-d', action="store", type=int, dest="side_len", default=300)
+    parser.add_argument('-s', action="store", type=float, dest="export_strength", default=0.1)
+    parser.add_argument('-l', action="store", type=int, dest="pull_amount", default=None)
+    parser.add_argument('-r', action="store", type=int, dest="random_nails", default=None)
+    parser.add_argument('-r1', action="store", type=float, dest="radius1_multiplier", default=1)
+    parser.add_argument('-r2', action="store", type=float, dest="radius2_multiplier", default=1)
+    parser.add_argument('-n', action="store", type=int, dest="nail_step", default=4)
+    parser.add_argument('--wb', action="store_true")
+    parser.add_argument('--rgb', action="store_true")
+    parser.add_argument('--rect', action="store_true")
+
+    args = parser.parse_args()
+
+    generate(args)
+
 

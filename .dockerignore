@@ -1,0 +1,7 @@
+# Exclude the project virtual environment from image builds
+**/__pycache__
+.venv
+.git
+examples
+*.pdf
+*.ipynb
