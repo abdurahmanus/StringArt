@@ -4,7 +4,7 @@ import io
 from fastapi import FastAPI, File, UploadFile, Form
 from fastapi.staticfiles import StaticFiles
 from fastapi.responses import StreamingResponse
-from generate import generate
+from src.generate import generate
 
 app = FastAPI()
 
